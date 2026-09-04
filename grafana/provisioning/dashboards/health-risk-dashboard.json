@@ -1,0 +1,50 @@
+{
+  "uid": "health-risk-ai",
+  "title": "Explainable Health Risk AI",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Disease Risk Trends",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "health-risk-mysql" }, "rawSql": "SELECT $__timeGroupAlias(prediction_date, '1d'), AVG(diabetes_probability) AS diabetes_probability, AVG(heart_probability) AS heart_probability FROM predictions WHERE $__timeFilter(prediction_date) GROUP BY 1 ORDER BY 1", "format": "time_series" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Prediction Count",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "health-risk-mysql" }, "rawSql": "SELECT COUNT(*) AS prediction_count FROM predictions", "format": "table" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Average Glucose",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "health-risk-mysql" }, "rawSql": "SELECT AVG(glucose) AS average_glucose FROM patients", "format": "table" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Average BMI",
+      "gridPos": { "x": 12, "y": 4, "w": 6, "h": 4 },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "health-risk-mysql" }, "rawSql": "SELECT AVG(bmi) AS average_bmi FROM patients", "format": "table" }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "High-Risk Patient Percentage",
+      "gridPos": { "x": 18, "y": 4, "w": 6, "h": 4 },
+      "targets": [
+        { "datasource": { "type": "mysql", "uid": "health-risk-mysql" }, "rawSql": "SELECT ROUND(100 * SUM(CASE WHEN diabetes_risk = 'High' OR heart_risk = 'High' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2) AS high_risk_percentage FROM predictions", "format": "table" }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 100, "unit": "percent" }, "overrides": [] }
+    }
+  ]
+}

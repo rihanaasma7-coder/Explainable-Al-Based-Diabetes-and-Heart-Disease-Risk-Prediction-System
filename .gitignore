@@ -1,0 +1,15 @@
+node_modules/
+target/
+__pycache__/
+.venv/
+*.pyc
+*.zip
+.env
+models/*.pkl
+processed/*.csv
+frontend/dist/
+mysql-data/
+grafana-data/
+
+frontend/vite.log
+frontend/vite.err.log

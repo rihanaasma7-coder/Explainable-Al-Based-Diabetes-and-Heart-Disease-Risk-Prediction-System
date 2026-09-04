@@ -1,0 +1,73 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: health-risk-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: health_risk_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    container_name: health-risk-ml
+    environment:
+      DATASET_DIR: /app/datasets
+      MODEL_DIR: /app/models
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./datasets:/app/datasets:ro
+      - ./models:/app/models
+      - ./processed:/app/processed
+
+  backend:
+    build: ./backend
+    container_name: health-risk-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/health_risk_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      ML_SERVICE_URL: http://ml-service:5000
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: health-risk-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: health-risk-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  grafana-data:
